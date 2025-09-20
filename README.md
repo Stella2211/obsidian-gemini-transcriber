@@ -96,6 +96,45 @@ python main.py /path/to/obsidian/vault -v
 python main.py /path/to/obsidian/vault --log-file app.log
 ```
 
+### 🔄 自動起動設定（systemdサービス）
+
+PCの起動時に自動で文字起こしサービスを開始できます（Linux限定、systemdを使用）：
+
+#### インストールと有効化
+
+```bash
+# サービスのインストール（現在の環境に合わせて自動設定）
+./setup_service.sh install
+
+# サービスの開始
+./setup_service.sh start
+
+# サービス状態の確認
+./setup_service.sh status
+```
+
+#### サービス管理コマンド
+
+```bash
+./setup_service.sh install   # サービスをインストール・有効化
+./setup_service.sh start     # サービスを開始
+./setup_service.sh stop      # サービスを停止
+./setup_service.sh restart   # サービスを再起動
+./setup_service.sh status    # サービス状態を確認
+./setup_service.sh logs      # ログを表示（過去50行）
+./setup_service.sh follow    # ログをリアルタイム表示
+./setup_service.sh update    # サービス設定を更新
+./setup_service.sh uninstall # サービスを削除
+```
+
+#### 設定の仕組み
+
+- **自動環境検出**: スクリプト実行時の環境（ディレクトリ、Python、ユーザー）を自動検出
+- **テンプレート生成**: 環境に合わせてsystemdサービスファイルを動的生成
+- **ポータブル**: どのディレクトリでも`./setup_service.sh install`で動作
+
+サービスが有効になると、PC起動時に自動的にObsidian Vault監視が開始されます。
+
 ### CLIモード
 
 単体ファイルの文字起こし：
