@@ -2,7 +2,6 @@
 
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![uv](https://img.shields.io/badge/uv-compatible-orange)](https://github.com/astral-sh/uv)
 
 Google Gemini APIを使用した高速・高精度な音声文字起こしツールです。指定されたフォルダを監視し、新しい音声ファイルを検知したら自動で文字起こし・要約の生成を行います。
