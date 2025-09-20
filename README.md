@@ -173,14 +173,17 @@ uv run pytest --cov=src --cov-report=html
 ### コード品質チェック
 
 ```bash
-# フォーマット
-uv run black src tests
+# Ruffによるコードチェック（フォーマット、Linting、インポート整理）
+uv run ruff check src tests
+
+# Ruffによる自動修正
+uv run ruff check --fix src tests
+
+# Ruffによるフォーマット
+uv run ruff format src tests
 
 # 型チェック
 uv run mypy src
-
-# Linting
-uv run flake8 src tests
 ```
 
 ## 📊 技術仕様
