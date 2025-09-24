@@ -214,3 +214,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Service configuration
+.service_config
+*.service
+!*.service.template

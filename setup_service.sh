@@ -4,12 +4,14 @@
 
 set -e
 
+CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE_NAME="obsidian-transcriber"
 SERVICE_TEMPLATE="${SERVICE_NAME}.service.template"
 SERVICE_FILE="${SERVICE_NAME}.service"
-CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="${CURRENT_DIR}/.service_config"
 CURRENT_USER=$(whoami)
 USER_HOME=$(eval echo ~${CURRENT_USER})
+VAULT_PATH=""
 
 # Find Python executable
 if command -v python3 &> /dev/null; then
@@ -25,6 +27,55 @@ echo "=== Obsidian Gemini Transcriber Service Setup ==="
 echo "Current user: $CURRENT_USER"
 echo "Working directory: $CURRENT_DIR"
 echo "Python path: $PYTHON_PATH"
+
+# Load existing configuration if available
+load_config() {
+    if [[ -f "${CONFIG_FILE}" ]]; then
+        source "${CONFIG_FILE}"
+        echo "Loaded configuration from ${CONFIG_FILE}"
+    fi
+}
+
+# Save configuration
+save_config() {
+    cat > "${CONFIG_FILE}" << EOF
+# Service configuration
+VAULT_PATH="${VAULT_PATH}"
+EOF
+    echo "Configuration saved to ${CONFIG_FILE}"
+}
+
+# Set vault path
+set_vault_path() {
+    local path="$1"
+
+    if [[ -z "${path}" ]]; then
+        # Try to load from config
+        load_config
+
+        if [[ -z "${VAULT_PATH}" ]]; then
+            echo "Error: Vault path is required"
+            echo "Usage: $0 install <vault_path>"
+            echo "Example: $0 install /home/${CURRENT_USER}/Documents/ObsidianVault"
+            exit 1
+        fi
+    else
+        # Expand path and make absolute
+        VAULT_PATH=$(realpath "${path}" 2>/dev/null || echo "${path}")
+
+        # Validate vault path
+        if [[ ! -d "${VAULT_PATH}" ]]; then
+            echo "Error: Vault path does not exist: ${VAULT_PATH}"
+            echo "Please create the directory first or provide a valid path"
+            exit 1
+        fi
+
+        # Save configuration
+        save_config
+    fi
+
+    echo "Vault path: ${VAULT_PATH}"
+}
 
 # Check if running as root
 if [[ $EUID -eq 0 ]]; then
@@ -51,7 +102,7 @@ User={{USER}}
 WorkingDirectory={{WORKING_DIR}}
 Environment="PATH={{USER_HOME}}/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="PYTHONPATH={{WORKING_DIR}}"
-ExecStart={{PYTHON_PATH}} {{WORKING_DIR}}/main.py
+ExecStart={{PYTHON_PATH}} {{WORKING_DIR}}/main.py {{VAULT_PATH}}
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
@@ -67,6 +118,7 @@ EOF
         -e "s|{{WORKING_DIR}}|${CURRENT_DIR}|g" \
         -e "s|{{USER_HOME}}|${USER_HOME}|g" \
         -e "s|{{PYTHON_PATH}}|${PYTHON_PATH}|g" \
+        -e "s|{{VAULT_PATH}}|${VAULT_PATH}|g" \
         "${CURRENT_DIR}/${SERVICE_TEMPLATE}" > "${CURRENT_DIR}/${SERVICE_FILE}"
 
     echo "Service file generated: ${SERVICE_FILE}"
@@ -75,6 +127,9 @@ EOF
 # Function to install the service
 install_service() {
     echo "Installing service..."
+
+    # Set vault path from argument
+    set_vault_path "$1"
 
     # Generate service file from template
     generate_service_file
@@ -95,6 +150,7 @@ install_service() {
     echo "  Working Directory: ${CURRENT_DIR}"
     echo "  Python Path: ${PYTHON_PATH}"
     echo "  User: ${CURRENT_USER}"
+    echo "  Vault Path: ${VAULT_PATH}"
 }
 
 # Function to start the service
@@ -153,6 +209,9 @@ uninstall_service() {
 update_service() {
     echo "Updating service configuration..."
 
+    # Set vault path from argument (or load from config)
+    set_vault_path "$1"
+
     # Generate new service file
     generate_service_file
 
@@ -174,7 +233,7 @@ update_service() {
 # Main menu
 case "${1:-}" in
     install)
-        install_service
+        install_service "$2"
         ;;
     start)
         start_service
@@ -196,34 +255,53 @@ case "${1:-}" in
         follow_logs
         ;;
     update)
-        update_service
+        update_service "$2"
         ;;
     uninstall)
         uninstall_service
         ;;
+    config)
+        # Show current configuration
+        load_config
+        echo ""
+        echo "Current Configuration:"
+        echo "  Vault Path: ${VAULT_PATH:-Not set}"
+        echo ""
+        ;;
     *)
-        echo "Usage: $0 {install|start|stop|restart|status|logs|follow|update|uninstall}"
+        echo "Usage: $0 {install|start|stop|restart|status|logs|follow|update|uninstall|config} [vault_path]"
         echo ""
         echo "Commands:"
-        echo "  install   - Install and enable the service"
-        echo "  start     - Start the service"
-        echo "  stop      - Stop the service"
-        echo "  restart   - Restart the service"
-        echo "  status    - Check service status"
-        echo "  logs      - View recent logs"
-        echo "  follow    - Follow logs in real-time"
-        echo "  update    - Update service configuration"
-        echo "  uninstall - Remove the service"
+        echo "  install <vault_path> - Install and enable the service with specified vault path"
+        echo "  start                - Start the service"
+        echo "  stop                 - Stop the service"
+        echo "  restart              - Restart the service"
+        echo "  status               - Check service status"
+        echo "  logs                 - View recent logs"
+        echo "  follow               - Follow logs in real-time"
+        echo "  update [vault_path]  - Update service configuration (optionally change vault path)"
+        echo "  uninstall            - Remove the service"
+        echo "  config               - Show current configuration"
         echo ""
         echo "Quick setup:"
-        echo "  1. Run: ./setup_service.sh install"
+        echo "  1. Run: ./setup_service.sh install /path/to/obsidian/vault"
         echo "  2. Run: ./setup_service.sh start"
         echo "  3. Check: ./setup_service.sh status"
+        echo ""
+        echo "Example:"
+        echo "  ./setup_service.sh install /home/${CURRENT_USER}/Documents/ObsidianVault"
         echo ""
         echo "Current environment:"
         echo "  Working Directory: ${CURRENT_DIR}"
         echo "  Python Path: ${PYTHON_PATH}"
         echo "  User: ${CURRENT_USER}"
+
+        # Try to load and show existing configuration
+        load_config
+        if [[ -n "${VAULT_PATH}" ]]; then
+            echo "  Configured Vault: ${VAULT_PATH}"
+        fi
+
         exit 1
         ;;
 esac
