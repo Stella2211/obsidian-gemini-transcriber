@@ -8,7 +8,7 @@ User={{USER}}
 WorkingDirectory={{WORKING_DIR}}
 Environment="PATH={{USER_HOME}}/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="PYTHONPATH={{WORKING_DIR}}"
-ExecStart={{PYTHON_PATH}} {{WORKING_DIR}}/main.py
+ExecStart={{PYTHON_PATH}} {{WORKING_DIR}}/main.py {{VAULT_PATH}}
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal

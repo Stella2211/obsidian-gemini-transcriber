@@ -13,13 +13,17 @@ CURRENT_USER=$(whoami)
 USER_HOME=$(eval echo ~${CURRENT_USER})
 VAULT_PATH=""
 
-# Find Python executable
-if command -v python3 &> /dev/null; then
+# Find Python executable (prefer uv venv)
+VENV_PYTHON="${CURRENT_DIR}/.venv/bin/python"
+if [[ -f "${VENV_PYTHON}" ]]; then
+    PYTHON_PATH="${VENV_PYTHON}"
+elif command -v python3 &> /dev/null; then
     PYTHON_PATH=$(command -v python3)
 elif command -v python &> /dev/null; then
     PYTHON_PATH=$(command -v python)
 else
-    echo "Error: Python not found in PATH"
+    echo "Error: Python not found"
+    echo "Please run 'uv sync' to set up the virtual environment"
     exit 1
 fi
 
