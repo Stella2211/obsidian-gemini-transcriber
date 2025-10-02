@@ -16,8 +16,8 @@ AUDIO_EXTENSIONS: Set[str] = {
 }
 
 # API settings
-TRANSCRIPTION_MODEL = "gemini-2.5-flash-lite"  # Model for audio transcription
-SUMMARY_MODEL = "gemini-2.5-flash"  # Model for text summarization
+TRANSCRIPTION_MODEL = "gemini-2.5-flash-preview-09-2025"  # Model for audio transcription
+SUMMARY_MODEL = "gemini-2.5-flash-preview-09-2025"  # Model for text summarization
 MAX_RETRIES = 5
 DEFAULT_TIMEOUT = 600  # 10 minutes
 RETRY_BACKOFF_BASE = 10  # Base seconds for exponential backoff
