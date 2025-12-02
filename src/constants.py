@@ -16,8 +16,8 @@ AUDIO_EXTENSIONS: Set[str] = {
 }
 
 # API settings
-TRANSCRIPTION_MODEL = "gemini-2.5-flash-preview-09-2025"  # Model for audio transcription
-SUMMARY_MODEL = "gemini-2.5-flash-preview-09-2025"  # Model for text summarization
+TRANSCRIPTION_MODEL = "gemini-flash-latest"  # Model for audio transcription
+SUMMARY_MODEL = "gemini-flash-latest"  # Model for text summarization
 MAX_RETRIES = 5
 DEFAULT_TIMEOUT = 600  # 10 minutes
 RETRY_BACKOFF_BASE = 10  # Base seconds for exponential backoff
@@ -50,3 +50,4 @@ MAX_TRANSCRIPTION_PREVIEW_LENGTH = 15000  # Characters for summary generation
 # Obsidian note settings
 DEFAULT_TAGS = ["音声文字起こし", "自動生成"]
 SUMMARY_TAGS = ["音声要約", "自動生成"]
+PROGRESS_TAGS = ["処理中", "自動生成"]

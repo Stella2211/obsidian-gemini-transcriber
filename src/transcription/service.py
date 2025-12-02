@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Callable
 
 from src.api.client import GeminiClient
 from src.audio.vad import VADProcessor
@@ -30,7 +30,13 @@ class TranscriptionService:
         logger.info("Initialized transcription service")
 
     def transcribe_file(
-        self, audio_path: Path, use_vad: bool = True, vad_threshold_seconds: float = 600
+        self,
+        audio_path: Path,
+        use_vad: bool = True,
+        vad_threshold_seconds: float = 600,
+        progress_callback: Optional[
+            Callable[[str, Optional[tuple[int, int]]], None]
+        ] = None,
     ) -> str:
         """
         Transcribe an audio file
@@ -39,6 +45,8 @@ class TranscriptionService:
             audio_path: Path to the audio file
             use_vad: Whether to use VAD for long files
             vad_threshold_seconds: Duration threshold for using VAD
+            progress_callback: Optional callback function for progress updates
+                               Takes (status: str, segment_info: Optional[tuple[current, total]])
 
         Returns:
             Transcribed text
@@ -50,8 +58,10 @@ class TranscriptionService:
             logger.info(f"Audio duration: {duration:.2f} seconds")
 
             if use_vad and duration > vad_threshold_seconds:
-                return self._transcribe_with_vad(audio_path)
+                return self._transcribe_with_vad(audio_path, progress_callback)
             else:
+                if progress_callback:
+                    progress_callback("文字起こし中", None)
                 return self._transcribe_direct(audio_path)
 
         except Exception as e:
@@ -71,25 +81,43 @@ class TranscriptionService:
         logger.info("Transcribing audio directly (no splitting)")
         return self.client.transcribe_audio(audio_path)
 
-    def _transcribe_with_vad(self, audio_path: Path) -> str:
+    def _transcribe_with_vad(
+        self,
+        audio_path: Path,
+        progress_callback: Optional[
+            Callable[[str, Optional[tuple[int, int]]], None]
+        ] = None,
+    ) -> str:
         """
         Transcribe audio file with VAD splitting
 
         Args:
             audio_path: Path to the audio file
+            progress_callback: Optional callback function for progress updates
 
         Returns:
             Transcribed text
         """
         logger.info("Transcribing audio with VAD splitting")
 
+        if progress_callback:
+            progress_callback("音声を分割中", None)
+
         # Split audio using VAD
         segments = self.vad_processor.split_audio(audio_path)
-        logger.info(f"Audio split into {len(segments)} segments")
+        total_segments = len(segments)
+        logger.info(f"Audio split into {total_segments} segments")
 
         transcriptions = []
         for i, (start, end, segment_path) in enumerate(segments):
-            logger.info(f"Processing segment {i + 1}/{len(segments)}")
+            current_segment = i + 1
+            logger.info(f"Processing segment {current_segment}/{total_segments}")
+
+            if progress_callback:
+                progress_callback(
+                    f"セグメント {current_segment}/{total_segments} を文字起こし中",
+                    (current_segment, total_segments),
+                )
 
             try:
                 # Transcribe segment
@@ -99,10 +127,10 @@ class TranscriptionService:
                     )
                     transcriptions.append(segment_text)
                 except Exception as e:
-                    logger.error(f"Failed to transcribe segment {i + 1}: {e}")
+                    logger.error(f"Failed to transcribe segment {current_segment}: {e}")
                     # Continue with other segments even if one fails
                     transcriptions.append(
-                        f"[セグメント {i + 1} の文字起こしに失敗: {e}]"
+                        f"[セグメント {current_segment} の文字起こしに失敗: {e}]"
                     )
             finally:
                 # Clean up temporary segment file
