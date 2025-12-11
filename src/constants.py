@@ -16,7 +16,7 @@ AUDIO_EXTENSIONS: Set[str] = {
 }
 
 # API settings
-TRANSCRIPTION_MODEL = "gemini-flash-latest"  # Model for audio transcription
+TRANSCRIPTION_MODEL = "gemini-flash-lite-latest"  # Model for audio transcription
 SUMMARY_MODEL = "gemini-flash-latest"  # Model for text summarization
 MAX_RETRIES = 5
 DEFAULT_TIMEOUT = 600  # 10 minutes
